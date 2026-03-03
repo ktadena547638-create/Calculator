@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precision Calculator</title>
+    <!-- 
+        Using Tailwind CDN for rapid prototyping.
+        In production, you'd compile only the classes you use (tree-shaking).
+    -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Tailwind config: Extending with custom colors for our dark theme
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'calc-dark': '#1a1a2e',
+                        'calc-darker': '#16162a',
+                        'calc-accent': '#e94560',
+                        'calc-secondary': '#0f3460',
+                        'calc-light': '#eaeaea',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Subtle glow effect for the display - CSS handles presentation, not logic */
+        .display-glow {
+            box-shadow: 0 0 30px rgba(233, 69, 96, 0.1);
+        }
+        /* Smooth button press feedback */
+        .btn-press:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-calc-darker flex items-center justify-center p-4">
+
+    <!-- 
+        THE CALCULATOR SHELL
+        Notice: No inline JS handlers. We use data attributes for semantic meaning.
+        The JS will use Event Delegation - one listener on the parent, not 20 on buttons.
+    -->
+    <div id="calculator" class="w-full max-w-sm">
+        
+        <!-- Header with History Toggle -->
+        <div class="flex justify-between items-center mb-4 px-2">
+            <h1 class="text-calc-light text-lg font-light tracking-wider">PRECISION</h1>
+            <button 
+                id="history-toggle" 
+                class="text-calc-light/50 hover:text-calc-accent transition-colors text-sm"
+                aria-label="Toggle history panel"
+            >
+                History ▾
+            </button>
+        </div>
+
+        <!-- History Panel (Hidden by default) -->
+        <div 
+            id="history-panel" 
+            class="hidden bg-calc-dark rounded-xl p-4 mb-4 max-h-40 overflow-y-auto"
+        >
+            <ul id="history-list" class="space-y-2 text-calc-light/70 text-sm font-mono">
+                <!-- History items will be injected here -->
+            </ul>
+            <button 
+                id="clear-history" 
+                class="mt-3 text-xs text-calc-accent hover:text-calc-accent/70 transition-colors"
+            >
+                Clear History
+            </button>
+        </div>
+
+        <!-- Display Area -->
+        <div class="bg-calc-dark rounded-2xl p-6 mb-4 display-glow">
+            <!-- Expression (what user is typing) -->
+            <div 
+                id="expression" 
+                class="text-calc-light/50 text-right text-lg h-7 font-mono overflow-hidden"
+                aria-live="polite"
+            ></div>
+            <!-- Result (current number or computed result) -->
+            <div 
+                id="display" 
+                class="text-calc-light text-right text-5xl font-light tracking-tight overflow-hidden"
+                aria-live="assertive"
+            >0</div>
+        </div>
+
+        <!-- 
+            BUTTON GRID
+            data-* attributes are our "API" between HTML and JS.
+            This is cleaner than class-based selection because intent is explicit.
+        -->
+        <div 
+            id="button-grid"
+            class="grid grid-cols-4 gap-3"
+        >
+            <!-- Row 1: Clear, Sign, Percent, Divide -->
+            <button data-action="clear" class="btn-press bg-calc-secondary text-calc-light rounded-2xl py-4 text-xl font-medium hover:bg-calc-secondary/80 transition-colors">C</button>
+            <button data-action="sign" class="btn-press bg-calc-secondary text-calc-light rounded-2xl py-4 text-xl font-medium hover:bg-calc-secondary/80 transition-colors">±</button>
+            <button data-action="percent" class="btn-press bg-calc-secondary text-calc-light rounded-2xl py-4 text-xl font-medium hover:bg-calc-secondary/80 transition-colors">%</button>
+            <button data-operator="/" class="btn-press bg-calc-accent text-white rounded-2xl py-4 text-xl font-medium hover:bg-calc-accent/80 transition-colors">÷</button>
+
+            <!-- Row 2: 7, 8, 9, Multiply -->
+            <button data-digit="7" class="btn-press bg-calc-dark text-calc-light rounded-2xl py-4 text-xl font-medium hover:bg-calc-dark/70 transition-colors">7</button>
+            <button data-digit="8" class="btn-press bg-calc-dark text-calc-light rounded-2xl py-4 text-xl font-medium hover:bg-calc-dark/70 transition-colors">8</button>
+            <button data-digit="9" class="btn-press bg-calc-dark text-calc-light rounded-2xl py-4 text-xl font-medium hover:bg-calc-dark/70 transition-colors">9</button>
+            <button data-operator="*" class="btn-press bg-calc-accent text-white rounded-2xl py-4 text-xl font-medium hover:bg-calc-accent/80 transition-colors">×</button>
+
+            <!-- Row 3: 4, 5, 6, Subtract -->
+            <button data-digit="4" class="btn-press bg-calc-dark text-calc-light rounded-2xl py-4 text-xl font-medium hover:bg-calc-dark/70 transition-colors">4</button>
+            <button data-digit="5" class="btn-press bg-calc-dark text-calc-light rounded-2xl py-4 text-xl font-medium hover:bg-calc-dark/70 transition-colors">5</button>
+            <button data-digit="6" class="btn-press bg-calc-dark text-calc-light rounded-2xl py-4 text-xl font-medium hover:bg-calc-dark/70 transition-colors">6</button>
+            <button data-operator="-" class="btn-press bg-calc-accent text-white rounded-2xl py-4 text-xl font-medium hover:bg-calc-accent/80 transition-colors">−</button>
+
+            <!-- Row 4: 1, 2, 3, Add -->
+            <button data-digit="1" class="btn-press bg-calc-dark text-calc-light rounded-2xl py-4 text-xl font-medium hover:bg-calc-dark/70 transition-colors">1</button>
+            <button data-digit="2" class="btn-press bg-calc-dark text-calc-light rounded-2xl py-4 text-xl font-medium hover:bg-calc-dark/70 transition-colors">2</button>
+            <button data-digit="3" class="btn-press bg-calc-dark text-calc-light rounded-2xl py-4 text-xl font-medium hover:bg-calc-dark/70 transition-colors">3</button>
+            <button data-operator="+" class="btn-press bg-calc-accent text-white rounded-2xl py-4 text-xl font-medium hover:bg-calc-accent/80 transition-colors">+</button>
+
+            <!-- Row 5: 0 (wide), Decimal, Equals -->
+            <button data-digit="0" class="btn-press bg-calc-dark text-calc-light rounded-2xl py-4 text-xl font-medium hover:bg-calc-dark/70 transition-colors col-span-2 text-left pl-8">0</button>
+            <button data-action="decimal" class="btn-press bg-calc-dark text-calc-light rounded-2xl py-4 text-xl font-medium hover:bg-calc-dark/70 transition-colors">.</button>
+            <button data-action="equals" class="btn-press bg-calc-accent text-white rounded-2xl py-4 text-xl font-medium hover:bg-calc-accent/80 transition-colors">=</button>
+        </div>
+
+        <!-- Keyboard hint -->
+        <p class="text-center text-calc-light/30 text-xs mt-6">
+            Keyboard enabled: 0-9, operators, Enter, Escape, Backspace
+        </p>
+    </div>
+
+    <script src="js/calculator.js"></script>
+</body>
+</html>
